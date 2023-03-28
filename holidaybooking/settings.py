@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 import os
+from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -39,6 +40,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # Add django rest framework to installed apps
+    'rest_framework',
+    # Add djoser authentication engine to installed apps
+    'djoser',
     # Add created account to installed apps
     'account.apps.AccountConfig',
 ]
@@ -132,10 +137,52 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
 # Set SMTP server configuration
 EMAIL_HOST = str(os.getenv('EMAIL_HOST'))
 EMAIL_HOST_USER = str(os.getenv('EMAIL_HOST_USER'))
 EMAIL_HOST_PASSWORD = str(os.getenv('EMAIL_HOST_PASSWORD'))
 EMAIL_PORT = str(os.getenv('EMAIL_PORT'))
 EMAIL_USE_TLS = str(os.getenv('EMAIL_USE_TLS'))
+
+# Set customized user model as default model
+AUTH_USER_MODEL = 'account.User'
+
+# Set django rest framework configuration
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        # Set jwt authentication method for djoser authentication backend
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+
+# Set account serializer
+ACCOUNT_SERIALIZER = 'account.serializers.UserCreateSerializer'
+
+# Set djoser configuration
+DJOSER = {
+    'LOGIN_FIELD': 'email',
+    'USER_CREATE_PASSWORD_RETYPE': True,
+    'PASSWORD_CHANGED_EMAIL_CONFIRMATION': True,
+    'SEND_CONFIRMATION_EMAIL': True,
+    'SET_PASSWORD_RETYPE': True,
+    'PASSWORD_RESET_CONFIRM_URL': 'password/reset/confirm/{uid}/{token}',
+    'ACTIVATION_URL': 'activate/{uid}/{token}',
+    'SEND_ACTIVATION_EMAIL': True,
+    'SERIALIZERS': {
+        'user_create': ACCOUNT_SERIALIZER,
+        'user': ACCOUNT_SERIALIZER,
+        'current_user': ACCOUNT_SERIALIZER,
+        'user_delete': 'djoser.serializers.UserDeleteSerializer',
+    }
+}
+
+# Set jwt configuration
+SIMPLE_JWT = {
+    'AUTH_HEADER_TYPES': ('JWT',),
+    # Set access and refresh token time
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=3),
+    'AUTH_TOKEN_CLASSES': (
+        'rest_framework_simplejwt.tokens.AccessToken',
+    )
+}
