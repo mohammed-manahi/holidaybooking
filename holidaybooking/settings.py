@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     'djoser',
     # Add created account to installed apps
     'account.apps.AccountConfig',
+    # Add django GIS to enable location fields
+    'django.contrib.gis',
 ]
 
 MIDDLEWARE = [
