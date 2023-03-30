@@ -44,10 +44,12 @@ INSTALLED_APPS = [
     'rest_framework',
     # Add djoser authentication engine to installed apps
     'djoser',
-    # Add created account to installed apps
+    # Add created account app to installed apps
     'account.apps.AccountConfig',
     # Add django GIS to enable location fields
     'django.contrib.gis',
+    # Add created reservation app to installed apps
+    'reservation.apps.ReservationConfig'
 ]
 
 MIDDLEWARE = [

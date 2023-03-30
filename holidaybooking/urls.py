@@ -23,6 +23,7 @@ urlpatterns = [
     # Add djoser url patterns to use djoser authentication backend with jwt authentication method
     path('auth/', include('djoser.urls')),
     path('auth/', include('djoser.urls.jwt')),
+    path('', include('reservation.urls'))
 ]
 
 if settings.DEBUG:
