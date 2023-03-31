@@ -1,65 +1,36 @@
-from rest_framework.generics import get_object_or_404
+from django.shortcuts import render, get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework import status
-from rest_framework.viewsets import ModelViewSet
-from reservation.models import Property
-from reservation.serializers import PropertySerializer
+from rest_framework.viewsets import ModelViewSet, GenericViewSet
+from rest_framework.filters import SearchFilter, OrderingFilter
+from reservation.models import Property, Category, Media, Feature, FeatureCategory, Review
+from reservation.serializers import PropertySerializer, CategorySerializer, MediaSerializer, ReviewSerializer, \
+    FeatureCategorySerializer, FeatureSerializer
+from reservation.permissions import CanAddOrUpdateProperty, AdminOnlyActions
 
 
-#
-# class PropertyList(APIView):
-#     """ Class-based view for property list using APIView class """
-#
-#     def get(self, request):
-#         properties = Property.objects.all()
-#         serializer = PropertySerializer(properties, many=True, context={'request': request})
-#         return Response(serializer.data)
-#
-#     def post(self, request):
-#         serializer = PropertySerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         else:
-#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-#
-#
-# class PropertyDetail(APIView):
-#     """ Class-based view for property detail using APIView class """
-#
-#     def get(self, request, pk):
-#         property = get_object_or_404(Property, pk=pk)
-#         serializer = PropertySerializer(property)
-#         return Response(serializer.data)
-#
-#     def put(self, request, pk):
-#         property = get_object_or_404(Property, pk=pk)
-#         serializer = PropertySerializer(instance=property, data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_200_OK)
-#         else:
-#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-#
-#     def delete(self, request, pk):
-#         property = get_object_or_404(Property, pk=pk)
-#         property.delete()
-#         return Response(status=status.HTTP_204_NO_CONTENT)
 class PropertyViewSet(ModelViewSet):
     """
     Create view set for property model
     """
+    # Use django-filter library to apply generic back-end filtering and search filter
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+
+    # Add search filter fields
+    search_fields = ['name', 'description']
+
+    # Add sorting filter fields
+    ordering_fields = ['name', 'price_per_night']
+
     # Set custom permission class
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, CanAddOrUpdateProperty]
 
     def get_queryset(self):
         """
         Define property api query-set
         :return:
         """
-        return Property.objects.all()
+        return Property.objects.select_related('category').prefetch_related('media').all()
 
     def get_serializer_class(self):
         """
@@ -74,3 +45,157 @@ class PropertyViewSet(ModelViewSet):
         :return:
         """
         return {'request': self.request}
+
+
+class CategoryViewSet(ModelViewSet):
+    """
+    Create view set for category model
+    """
+    # Use django-filter library to apply generic back-end filtering and search filter
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+
+    # Add search filter fields
+    search_fields = ['name', 'description']
+
+    # Add sorting filter fields
+    ordering_fields = ['name']
+
+    # Set permission classes
+    permission_classes = [IsAuthenticated, AdminOnlyActions]
+
+    def get_queryset(self):
+        """
+        Define category api query-set
+        :return:
+        """
+        return Category.objects.prefetch_related('properties').all()
+
+    def get_serializer_class(self):
+        """
+        Define category api serializer
+        :return:
+        """
+        return CategorySerializer
+
+    def get_serializer_context(self):
+        """
+        Define property api context
+        :return:
+        """
+        return {'request': self.request}
+
+
+class MediaViewSet(ModelViewSet):
+    """
+    Create media view set for media model
+    """
+    # Set  permission classes
+    permission_classes = [IsAuthenticated, CanAddOrUpdateProperty]
+
+    def get_queryset(self):
+        """
+        Define media api queryset
+        :return:
+        """
+        return Media.objects.filter(property_id=self.kwargs.get('property_pk'))
+
+    def get_serializer_class(self):
+        """
+         Define media api serializer
+        :return:
+        """
+        return MediaSerializer
+
+    def get_serializer_context(self):
+        """
+        Define media api context
+        :return:
+        """
+        return {'request': self.request, 'property_id': self.kwargs.get('property_pk')}
+
+
+class ReviewViewSet(ModelViewSet):
+    """
+    Create review view set for review model
+    """
+    # Set permission classes
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        Define review api queryset
+        :return:
+        """
+        return Review.objects.filter(property_id=self.kwargs.get('property_pk'))
+
+    def get_serializer_class(self):
+        """
+        Define review api serializer
+        :return:
+        """
+        return ReviewSerializer
+
+    def get_serializer_context(self):
+        """
+        Define review api context
+        :return:
+        """
+        return {'request': self.request, 'property_id': self.kwargs.get('property_pk')}
+
+
+class FeatureCategoryViewSet(ModelViewSet):
+    """
+    Create feature category view set for feature category model
+    """
+    # Set permission classes
+    permission_classes = [IsAuthenticated, AdminOnlyActions]
+
+    def get_queryset(self):
+        """
+        Define feature category api queryset
+        :return:
+        """
+        return FeatureCategory.objects.all()
+
+    def get_serializer_class(self):
+        """
+        Define feature category api serializer
+        :return:
+        """
+        return FeatureCategorySerializer
+
+    def get_serializer_context(self):
+        """
+        Define feature category api context
+        :return:
+        """
+        return {'request': self.request}
+
+
+class FeatureViewSet(ModelViewSet):
+    """
+    Create feature view set for feature model
+    """
+    # Set permission classes
+    permission_classes = [IsAuthenticated, CanAddOrUpdateProperty]
+
+    def get_queryset(self):
+        """
+        Define feature api queryset
+        :return:
+        """
+        return Feature.objects.select_related('property').filter(property_id=self.kwargs.get('property_pk'))
+
+    def get_serializer_class(self):
+        """
+        Define feature api serializer
+        :return:
+        """
+        return FeatureSerializer
+
+    def get_serializer_context(self):
+        """
+        Define feature api context
+        :return:
+        """
+        return {'request': self.request, 'property_id': self.kwargs.get('property_pk')}

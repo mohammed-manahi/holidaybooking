@@ -5,14 +5,15 @@ name = "pypi"
 
 [packages]
 django = "*"
-pep8 = "*"
 psycopg2-binary = "*"
 python-dotenv = "*"
+pep8 = "*"
 pillow = "*"
 djangorestframework = "*"
 djoser = "*"
 djangorestframework-simplejwt = "*"
 drf-nested-routers = "*"
+django-filter = "*"
 
 [dev-packages]
 
