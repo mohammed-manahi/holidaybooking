@@ -1,6 +1,7 @@
 from django.db.models.aggregates import Avg
 from rest_framework import serializers
 from reservation.models import Property, Category, Media, Feature, FeatureCategory, Review
+from django.utils import timezone
 
 
 class MediaSerializer(serializers.ModelSerializer):
@@ -123,6 +124,7 @@ class PropertySerializer(serializers.ModelSerializer):
     """
     # Get current authenticated user
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    available = serializers.BooleanField(default=True, read_only=True)
 
     def validate(self, attrs):
         """
@@ -132,14 +134,18 @@ class PropertySerializer(serializers.ModelSerializer):
         """
         if attrs['available_from'] > attrs['available_to']:
             raise serializers.ValidationError('Available to date must occur after available from date')
+        if attrs['available_from'] >= timezone.now() <= attrs['available_to']:
+            attrs['available'] = True
+        else:
+            attrs['available'] = False
         return attrs
 
     class Meta():
         model = Property
         fields = ['id', 'name', 'description', 'slug', 'owner', 'category', 'address', 'size', 'location',
                   'number_of_bedrooms', 'number_of_beds', 'number_of_baths', 'number_of_adult_guests',
-                  'number_of_child_guests', 'price_per_night', 'deposit', 'available', 'available_from', 'available_to',
-                  'cancellation_policy', 'cancellation_fee_per_night', 'media', 'reviews', 'features']
+                  'number_of_child_guests', 'price_per_night', 'deposit', 'available_from', 'available_to',
+                  'cancellation_policy', 'cancellation_fee_per_night', 'media', 'reviews', 'features', 'available']
 
         # Display property media
         media = MediaSerializer(many=True, read_only=True)
