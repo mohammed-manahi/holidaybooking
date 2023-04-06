@@ -31,7 +31,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-INTERNAL_IPS = ['127.0.0.1',]
+INTERNAL_IPS = ['127.0.0.1', ]
 
 # Application definition
 
@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Add django rest framework to installed apps
     'rest_framework',
+    # Add rest framework gis
+    'rest_framework_gis',
     # Add djoser authentication engine to installed apps
     'djoser',
     # Add created account app to installed apps
@@ -195,3 +197,5 @@ SIMPLE_JWT = {
         'rest_framework_simplejwt.tokens.AccessToken',
     )
 }
+
+GEOIP_PATH = os.path.join(BASE_DIR, 'geoip')

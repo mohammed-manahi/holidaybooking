@@ -17,6 +17,10 @@ django-filter = "*"
 django-debug-toolbar = "*"
 model-bakery = "*"
 faker = "*"
+requests = "*"
+postgis = "*"
+djangorestframework-gis = "*"
+geoip2 = "*"
 
 [dev-packages]
 

@@ -1,7 +1,12 @@
+import json
+import os
+import requests
 from django.db.models.aggregates import Avg
-from rest_framework import serializers
-from reservation.models import Property, Category, Media, Feature, FeatureCategory, Review
 from django.utils import timezone
+from rest_framework import serializers
+from rest_framework_gis.serializers import GeoFeatureModelSerializer
+from reservation.models import Property, Category, Media, Feature, FeatureCategory, Review
+from django.contrib.gis.geoip2 import GeoIP2
 
 
 class MediaSerializer(serializers.ModelSerializer):
@@ -144,22 +149,29 @@ class PropertySerializer(serializers.ModelSerializer):
         model = Property
         fields = ['id', 'name', 'description', 'slug', 'owner', 'category', 'address', 'size', 'location',
                   'number_of_bedrooms', 'number_of_beds', 'number_of_baths', 'number_of_adult_guests',
-                  'number_of_child_guests', 'price_per_night', 'deposit', 'available_from', 'available_to',
-                  'cancellation_policy', 'cancellation_fee_per_night', 'media', 'reviews', 'features', 'available']
+                  'number_of_child_guests', 'price_per_night', 'available_from', 'available_to',
+                  'cancellation_policy', 'cancellation_fee_per_night', 'media', 'reviews', 'features', 'available',
+                  'average_rate', 'location_geo']
+        read_only_fields = ['available']
 
-        # Display property media
-        media = MediaSerializer(many=True, read_only=True)
+    # Display property media
+    media = MediaSerializer(many=True, read_only=True)
 
-        # Display property reviews
-        reviews = ReviewSerializer(many=True, read_only=True)
+    # Display property reviews
+    reviews = ReviewSerializer(many=True, read_only=True)
 
-        # Display property features
-        features = FeatureSerializer(many=True, read_only=True)
+    # Display property features
+    features = FeatureSerializer(many=True, read_only=True)
 
-        # Custom field for average review rate
-        average_rate = serializers.SerializerMethodField(method_name='get_average_rate')
+    # Custom field for average review rate
+    average_rate = serializers.SerializerMethodField(method_name='get_average_rate')
 
-        # Custom field for average review rate
+    def get_average_rate(self, property):
+        return property.reviews.all().aggregate(Avg('rate'))
 
-        def get_average_rate(self, property):
-            return property.reviews.all().aggregate(Avg('rate'))
+    location_geo = serializers.SerializerMethodField(method_name='get_user_location')
+
+    def get_user_location(self, property):
+        geo = GeoIP2()
+        ip = self.context.get('request').META.get('REMOTE_ADDR')
+        return geo.geos(ip).wkt
