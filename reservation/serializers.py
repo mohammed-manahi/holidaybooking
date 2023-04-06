@@ -10,7 +10,23 @@ class MediaSerializer(serializers.ModelSerializer):
 
     class Meta():
         model = Media
-        fields = ['id', 'name', 'description', 'photo', 'video']
+        fields = ['id', 'name', 'description', 'photo', 'video', 'user']
+
+        # Get current authenticated user
+
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+
+    def validate(self, attrs):
+        """
+        Custom validation to allow owner only to add media to peroperty
+        :param attrs:
+        :return:
+        """
+        property_id = self.context['property_id']
+        user = attrs['user']
+        if not Media.objects.filter(property_id=property_id, property__owner=user):
+            raise serializers.ValidationError('Only property owner can add media to their own property')
+        return attrs
 
     def create(self, validated_data):
         """
