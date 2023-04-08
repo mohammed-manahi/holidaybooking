@@ -131,6 +131,7 @@ class PropertySerializer(serializers.ModelSerializer):
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
     available = serializers.BooleanField(default=True, read_only=True)
 
+
     def validate(self, attrs):
         """
         Custom validation for available from and available to fields
@@ -139,10 +140,8 @@ class PropertySerializer(serializers.ModelSerializer):
         """
         if attrs['available_from'] > attrs['available_to']:
             raise serializers.ValidationError('Available to date must occur after available from date')
-        if attrs['available_from'] >= timezone.now() <= attrs['available_to']:
-            attrs['available'] = True
-        else:
-            attrs['available'] = False
+        if not attrs['available_from'] >= timezone.now() <= attrs['available_to']:
+            raise serializers.ValidationError('Availability dates are not valid')
         return attrs
 
     class Meta():
@@ -151,7 +150,7 @@ class PropertySerializer(serializers.ModelSerializer):
                   'number_of_bedrooms', 'number_of_beds', 'number_of_baths', 'number_of_adult_guests',
                   'number_of_child_guests', 'price_per_night', 'available_from', 'available_to',
                   'cancellation_policy', 'cancellation_fee_per_night', 'media', 'reviews', 'features', 'available',
-                  'average_rate', 'location_geo']
+                  'average_rate']
         read_only_fields = ['available']
 
     # Display property media
@@ -169,9 +168,9 @@ class PropertySerializer(serializers.ModelSerializer):
     def get_average_rate(self, property):
         return property.reviews.all().aggregate(Avg('rate'))
 
-    location_geo = serializers.SerializerMethodField(method_name='get_user_location')
-
-    def get_user_location(self, property):
-        geo = GeoIP2()
-        ip = self.context.get('request').META.get('REMOTE_ADDR')
-        return geo.geos(ip).wkt
+    # location_geo = serializers.SerializerMethodField(method_name='get_user_location')
+    #
+    # def get_user_location(self, property):
+    #     geo = GeoIP2()
+    #     ip = self.context.get('request').META.get('REMOTE_ADDR')
+    #     return geo.geos('94.122.149.41').wkt
