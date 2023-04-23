@@ -1,5 +1,5 @@
 from django.contrib import admin
-from reservation.models import Property, Media, Feature, FeatureCategory, Review, Category
+from reservation.models import Property, Media, Feature, FeatureCategory, Review, Category, Reservation
 
 
 @admin.register(Media)
@@ -54,3 +54,9 @@ class PropertyCategoryAdmin(admin.ModelAdmin):
     """
     list_display = ['name', 'description', 'slug']
     list_filter = ['name']
+
+
+@admin.register(Reservation)
+class ReservationAdmin(admin.ModelAdmin):
+    list_display = ['property', 'reservation_from', 'reservation_to', 'reservation_to', 'guest']
+    list_filter = ['guest', 'property']
