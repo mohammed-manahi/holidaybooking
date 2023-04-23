@@ -24,13 +24,13 @@ class MediaSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         """
-        Custom validation to allow owner only to add media to peroperty
+        Custom validation to allow owner only to add media to property
         :param attrs:
         :return:
         """
         property_id = self.context['property_id']
-        user = attrs['user']
-        if not Media.objects.filter(property_id=property_id, property__owner=user):
+        user = self.context['request'].user
+        if not Media.objects.filter(property_id=property_id, property__owner_id=user.pk):
             raise serializers.ValidationError('Only property owner can add media to their own property')
         return attrs
 
