@@ -1,11 +1,12 @@
 import json
 import os
 import requests
+from decimal import Decimal
 from django.db.models.aggregates import Avg
 from django.utils import timezone
 from rest_framework import serializers
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
-from reservation.models import Property, Category, Media, Feature, FeatureCategory, Review
+from reservation.models import Property, Category, Media, Feature, FeatureCategory, Review, Reservation
 from django.contrib.gis.geoip2 import GeoIP2
 
 
@@ -30,7 +31,7 @@ class MediaSerializer(serializers.ModelSerializer):
         """
         property_id = self.context['property_id']
         user = self.context['request'].user
-        if not Media.objects.filter(property_id=property_id, property__owner_id=user.pk):
+        if not Media.objects.filter(property_id=property_id, property__owner_id=user.id):
             raise serializers.ValidationError('Only property owner can add media to their own property')
         return attrs
 
@@ -131,7 +132,6 @@ class PropertySerializer(serializers.ModelSerializer):
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
     available = serializers.BooleanField(default=True, read_only=True)
 
-
     def validate(self, attrs):
         """
         Custom validation for available from and available to fields
@@ -174,3 +174,103 @@ class PropertySerializer(serializers.ModelSerializer):
     #     geo = GeoIP2()
     #     ip = self.context.get('request').META.get('REMOTE_ADDR')
     #     return geo.geos('94.122.149.41').wkt
+
+
+class ReservationSerializer(serializers.ModelSerializer):
+    """
+    Create base reservation serializer for http methods except for post and patch
+    """
+
+    guest = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    property = PropertySerializer
+    available_from = serializers.DateTimeField(source='property.available_to', read_only=True)
+    available_to = serializers.DateTimeField(source='property.available_to', read_only=True)
+
+    class Meta:
+        model = Reservation
+        fields = ['id', 'guest', 'property', 'reservation_from', 'reservation_to', 'reserved',
+                  'reservation_in_nights', 'reservation_fees', 'total_fees''available_from',
+                  'available_to']
+        read_only_fields = ['available_from', 'available_to']
+
+    # Custom field for reservation duration in days
+    reservation_in_nights = serializers.SerializerMethodField(method_name='get_reservation_in_nights')
+
+    # Custom field for reservation fee calculation
+    reservation_fees = serializers.SerializerMethodField(method_name='calculate_reservation_fees')
+
+    # Custom field for total fees
+    total_fees = serializers.SerializerMethodField(method_name='calculate_total_fees')
+
+    def get_reservation_in_nights(self, reservation):
+        start_date = reservation.reservation_from
+        end_date = reservation.reservation_to
+        return abs((end_date - start_date).days)
+
+    def calculate_reservation_fees(self, reservation):
+        reservation_fees = reservation.property.price_per_night * self.get_reservation_in_nights(reservation)
+        return reservation_fees
+
+    def calculate_total_fees(self, reservation):
+        """
+        Assumption: total reservations fees are service fees in 12% added to reservation fees
+        :param reservation:
+        :return:
+        """
+        service_fees = (Decimal(0.12) * self.calculate_reservation_fees(reservation))
+        return service_fees + self.calculate_reservation_fees(reservation)
+
+
+class CreateReservationSerializer(serializers.ModelSerializer):
+    """
+    Create custom serializer for http method post (reservation creation action)
+    """
+    guest = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    reserved = serializers.HiddenField(default=False)
+    # available_from = serializers.DateTimeField(source='property.available_to', read_only=True)
+    # available_to = serializers.DateTimeField(source='property.available_to', read_only=True)
+
+    class Meta:
+        model = Reservation
+        fields = ['id', 'guest', 'property', 'reservation_from', 'reservation_to', 'reserved']
+
+    def validate(self, attrs):
+        """
+        Custom validation for reservation fields on create
+        :param attrs:
+        :return:
+        """
+        # custom reservation property validation
+        property_instance = attrs['property']
+        if Property.objects.filter(id=property_instance.id, available=False).exists():
+            raise serializers.ValidationError('Property does not exist')
+
+        if Reservation.objects.filter(property_id=property_instance.id, reserved=True).exists():
+            raise serializers.ValidationError('This property is currently reserved')
+
+        # Custom reservation dates validation
+        if attrs['reservation_from'] > attrs['reservation_to']:
+            raise serializers.ValidationError('Reservation must occur in available dates')
+
+        if attrs['reservation_from'] < property_instance.available_from:
+            raise serializers.ValidationError('Reservation from date must occur when the property is available')
+
+        if attrs['reservation_to'] > property_instance.available_to:
+            raise serializers.ValidationError('Reservation to date must occur when the property is available')
+
+        # Custom user type validation
+        user = self.context['request'].user
+        if user.role != 'guest':
+            raise serializers.ValidationError('Reservation is available only for guest user type')
+
+        return attrs
+
+
+class UpdateReservationSerializer(serializers.ModelSerializer):
+    """
+    Create custom serializer for http method patch (reservation update action)
+    """
+
+    class Meta:
+        model = Reservation
+        fields = ['reservation_from', 'reservation_to']

@@ -170,10 +170,10 @@ class Reservation(models.Model):
     """
     Create reservation model and associate it with property and user models
     """
-    property = models.OneToOneField(Property, on_delete=models.CASCADE, related_name='reservation')
+    property = models.OneToOneField(Property, on_delete=models.CASCADE)
     reservation_from = models.DateTimeField()
     reservation_to = models.DateTimeField()
-    guest = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='reserved_property')
+    guest = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     reserved = models.BooleanField(default=False)
 
     class Meta:

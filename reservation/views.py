@@ -1,11 +1,13 @@
 from django.shortcuts import render, get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, UpdateModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework.filters import SearchFilter, OrderingFilter
-from reservation.models import Property, Category, Media, Feature, FeatureCategory, Review
+from reservation.models import Property, Category, Media, Feature, FeatureCategory, Review, Reservation
 from reservation.serializers import PropertySerializer, CategorySerializer, MediaSerializer, ReviewSerializer, \
-    FeatureCategorySerializer, FeatureSerializer
+    FeatureCategorySerializer, FeatureSerializer, ReservationSerializer, CreateReservationSerializer, \
+    UpdateReservationSerializer
 from reservation.permissions import CanAddOrUpdateProperty, AdminOnlyActions
 
 
@@ -199,3 +201,46 @@ class FeatureViewSet(ModelViewSet):
         :return:
         """
         return {'request': self.request, 'property_id': self.kwargs.get('property_pk')}
+
+
+class ReservationViewSet(CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, UpdateModelMixin, GenericViewSet):
+    """
+    Create reservation view set
+    """
+    # Define allowed http methods
+    http_method_names = ['get', 'post', 'patch', 'delete', 'head', 'options']
+
+    # Set permission classes
+    permission_classes = [IsAuthenticated]
+
+    # Use django-filter library to apply generic back-end filtering and search filter
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+
+    # Add search filter fields
+    search_fields = ['reservation_from', 'reservation_to']
+
+    def get_queryset(self):
+        """
+        Define reservation API query-set
+        :return:
+        """
+        return Reservation.objects.all()
+
+    def get_serializer_class(self):
+        """
+        Define reservation api serializer
+        :return:
+        """
+        # Define order API serializer based on http method
+        if self.request.method == 'POST':
+            return CreateReservationSerializer
+        if self.request.method == 'PATCH':
+            return UpdateReservationSerializer
+        return ReservationSerializer
+
+    def get_serializer_context(self):
+        """
+        Define reservation api context
+        :return:
+        """
+        return {'request': self.request}

@@ -7,6 +7,7 @@ router = routers.DefaultRouter()
 router.register('properties', views.PropertyViewSet, basename='properties')
 router.register('categories', views.CategoryViewSet, basename='categories')
 router.register('feature-categories', views.FeatureCategoryViewSet, basename='feature-categories')
+router.register('reservations', views.ReservationViewSet, basename='reservations')
 
 # Define nested router for property media
 property_router = routers.NestedDefaultRouter(router, 'properties', lookup='property')
