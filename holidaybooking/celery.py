@@ -14,7 +14,7 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 # Load task modules from all registered Django app configs.
 app.autodiscover_tasks()
 
-# Define periodic tasks
+# Define periodic task for changing reservation state based reservation time duration
 app.conf.beat_schedule = {
     'update-reservation-state': {
         'task': 'reservation.tasks.update_reservation_state',
