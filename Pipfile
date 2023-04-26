@@ -21,6 +21,9 @@ requests = "*"
 postgis = "*"
 djangorestframework-gis = "*"
 geoip2 = "*"
+celery = "*"
+redis = "*"
+django-celery-beat = "*"
 
 [dev-packages]
 
