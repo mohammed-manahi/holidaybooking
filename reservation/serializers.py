@@ -189,7 +189,7 @@ class ReservationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Reservation
         fields = ['id', 'guest', 'property', 'reservation_from', 'reservation_to', 'reserved',
-                  'reservation_in_nights', 'reservation_fees', 'total_fees''available_from',
+                  'reservation_in_nights', 'reservation_fees', 'total_fees', 'available_from',
                   'available_to']
         read_only_fields = ['available_from', 'available_to']
 

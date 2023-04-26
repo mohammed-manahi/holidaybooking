@@ -1,7 +1,9 @@
+from django.http import QueryDict
 from django.shortcuts import render, get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, UpdateModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework.filters import SearchFilter, OrderingFilter
 from reservation.models import Property, Category, Media, Feature, FeatureCategory, Review, Reservation
