@@ -218,7 +218,4 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:3000'
 ]
 
-# Set stripe configurations
-STRIPE_PUBLISHABLE_KEY = str(os.getenv('STRIPE_PUBLISHABLE_KEY'))
-STRIPE_SECRET_KEY = str(os.getenv('STRIPE_SECRET_KEY'))
-STRIPE_API_VERSION = str(os.getenv('STRIPE_API_VERSION'))
+
