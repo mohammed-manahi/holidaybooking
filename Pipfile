@@ -25,6 +25,7 @@ celery = "*"
 redis = "*"
 django-celery-beat = "*"
 django-cors-headers = "*"
+stripe = "*"
 
 [dev-packages]
 

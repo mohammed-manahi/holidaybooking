@@ -2,6 +2,8 @@ from django.urls import path, include
 from reservation import views
 from rest_framework_nested import routers
 
+from reservation.views import process_payment
+
 # Use drf nested router to register view set routes
 router = routers.DefaultRouter()
 router.register('properties', views.PropertyViewSet, basename='properties')
@@ -20,4 +22,5 @@ urlpatterns = [
     path('', include(router.urls)),
     # Include view set nested routers
     path('', include(property_router.urls)),
+    path('process_payment/', process_payment, name='process_payment'),
 ]

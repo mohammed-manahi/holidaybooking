@@ -1,9 +1,10 @@
-from django.http import QueryDict
-from django.shortcuts import render, get_object_or_404
+import stripe
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import status
 from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, UpdateModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
+from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework.filters import SearchFilter, OrderingFilter
 from reservation.models import Property, Category, Media, Feature, FeatureCategory, Review, Reservation
@@ -11,6 +12,9 @@ from reservation.serializers import PropertySerializer, CategorySerializer, Medi
     FeatureCategorySerializer, FeatureSerializer, ReservationSerializer, CreateReservationSerializer, \
     UpdateReservationSerializer
 from reservation.permissions import CanAddOrUpdateProperty, AdminOnlyActions
+from django.conf import settings
+from django.http import JsonResponse
+from rest_framework.decorators import api_view
 
 
 class PropertyViewSet(ModelViewSet):
@@ -246,3 +250,41 @@ class ReservationViewSet(CreateModelMixin, RetrieveModelMixin, DestroyModelMixin
         :return:
         """
         return {'request': self.request}
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        # Process payment
+        process_payment(request)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+
+@api_view(['POST'])
+def process_payment(request):
+    reservation_id = request.data.get('reservation_id')
+    reservation = Reservation.objects.get(id=reservation_id)
+
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+
+    try:
+        # Create a Stripe charge
+        charge = stripe.Charge.create(
+            amount=int(reservation.total_fees * 100),
+            currency='usd',
+            description='Reservation payment',
+            source=request.data['stripeToken']
+        )
+
+        # Update reservation status
+        reservation.save()
+
+        # Return a success response
+        return JsonResponse({'success': True})
+
+    except stripe.error.CardError as e:
+        # Return an error response if the charge fails
+        return JsonResponse({'error': str(e)})
